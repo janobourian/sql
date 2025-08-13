@@ -37,6 +37,7 @@ brew services start mysql
 mysql -u root
 show databases;
 show tables;
+USE my_new_db;
 quit
 ```
 
