@@ -47,3 +47,27 @@ FROM owner o;
 SELECT DISTINCT o.type, w.open_to_public
 FROM owner o
 JOIN waterfall w ON o.id = w.owner_id;
+
+SELECT DISTINCT ord.status_id, cus.name AS customer_name
+FROM orders ord
+JOIN customers cus ON ord.customer_id = cus.customer_id
+ORDER BY customer_name ASC, status_id DESC;
+
+SELECT COUNT(DISTINCT status_id) AS unique_statuses
+FROM orders;
+
+--- FROM
+ SELECT status_id, status_name, description
+ FROM orders_status;
+
+SELECT AVG(total_amount) AS avg_order_amount
+FROM orders;
+
+SELECT COUNT(*) AS total_orders, os.status_name
+FROM orders_status os
+JOIN orders o ON os.status_id = o.status_id
+WHERE o.total_amount > 1143 AND os.status_name NOT LIKE '%Pend%'
+GROUP BY os.status_name
+HAVING COUNT(*) > 6
+ORDER BY total_orders DESC
+LIMIT 1;
