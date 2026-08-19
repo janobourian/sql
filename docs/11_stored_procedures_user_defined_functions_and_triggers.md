@@ -1,28 +1,41 @@
 # Module 11: Stored Procedures, User-Defined Functions (PL/pgSQL) & Triggers
 
-**Track:** SQL Relational Engineering & Distributed Database Architecture  
-**Category:** Procedural SQL, Server-Side Logic, PL/pgSQL Engine & Trigger Automation  
-**Standard Identifier:** `DOC-STD-UNIVERSAL-2026`  
+**Track:** SQL Relational Engineering & Distributed Database Architecture
+**Category:** Procedural SQL, Server-Side Logic, PL/pgSQL Engine & Trigger Automation
+**Standard Identifier:** `DOC-STD-UNIVERSAL-2026`
 **Status:** ✅ Completed
 
 ---
 
 ## 📑 Table of Contents
+
 1. [High-Level Overview & Executive Summary](#1-high-level-overview--executive-summary)
+
 2. [PL/pgSQL Engine Architecture & Execution Mechanics](#2-plpgsql-engine-architecture--execution-mechanics)
+
 3. [Functions vs Stored Procedures & Volatility Classifications](#3-functions-vs-stored-procedures--volatility-classifications)
+
 4. [Trigger Architecture: Timing, Granularity & Transition Tables](#4-trigger-architecture-timing-granularity--transition-tables)
+
 5. [Certification & Exam Essentials (Cheat Sheet)](#5-certification--exam-essentials-cheat-sheet)
+
 6. [Comparative Analysis Matrix: Server-Side Logic Architectures](#6-comparative-analysis-matrix-server-side-logic-architectures)
+
 7. [Performance & Resource Optimization](#7-performance--resource-optimization)
+
 8. [In-Depth Engineering Perspectives](#8-in-depth-engineering-perspectives)
-9. [Well-Architected Framework Alignment](#9-well-architected-framework-alignment)
-10. [Step-by-Step Hands-On Production Walkthrough](#10-step-by-step-hands-on-production-walkthrough)
-11. [Pure CLI / Command Interface](#11-pure-cli--command-interface)
-12. [Advanced Architecture & Edge-Case Failure Modes](#12-advanced-architecture--edge-case-failure-modes)
-13. [Detailed Sub-Components & Subsystems](#13-detailed-sub-components--subsystems)
-14. [References (The 5+5 Rule)](#14-references-the-55-rule)
-15. [Universal FinOps & Resource Cost Governance](#15-universal-finops--resource-cost-governance)
+
+9. [Step-by-Step Hands-On Production Walkthrough](#9-step-by-step-hands-on-production-walkthrough)
+
+10. [Pure CLI / Command Interface](#10-pure-cli--command-interface)
+
+11. [Advanced Architecture & Edge-Case Failure Modes](#11-advanced-architecture--edge-case-failure-modes)
+
+12. [Detailed Sub-Components & Subsystems](#12-detailed-sub-components--subsystems)
+
+13. [References (The 5+5 Rule)](#13-references-the-55-rule)
+
+14. [Universal FinOps & Resource Cost Governance](#14-universal-finops--resource-cost-governance)
 
 ---
 
@@ -30,7 +43,7 @@
 
 Procedural SQL engines (**PL/pgSQL** in PostgreSQL, **PL/SQL** in Oracle, **T-SQL** in Microsoft SQL Server) execute procedural control flow (loops, conditional branching, variable assignments, exception blocks) and autonomous transaction control directly inside the database kernel. Combining procedural routines with **Database Triggers** (`BEFORE`, `AFTER`, `INSTEAD OF`) establishes an engine-level automation layer for audit compliance, automated change-data capture, and complex relational invariant enforcement.
 
-```
+```text
 ┌────────────────────────────────────────────────────────────────────────────────┐
 │                   PL/PGSQL ENGINE COMPILATION & EXECUTION                      │
 ├────────────────────────────────────────────────────────────────────────────────┤
@@ -51,6 +64,7 @@ Procedural SQL engines (**PL/pgSQL** in PostgreSQL, **PL/SQL** in Oracle, **T-SQ
 ```
 
 ### 👔 Executive Summary (For Managers & Non-Technical Stakeholders)
+
 * **Business Purpose**: Stored procedures and triggers run business logic and security auditing directly inside the database, eliminating the need to transfer millions of records across the network to application servers.
 * **How It Works**: When a customer record or balance is updated, database triggers automatically capture the old and new data into an unalterable, tamper-proof JSON audit log without relying on application developers to remember to write logging code.
 * **Key Business Value & ROI**: Guarantees 100% regulatory audit compliance (SOC 2, GDPR, HIPAA), reduces network traffic between microservices and databases by up to 85%, and eliminates race conditions in financial operations.
@@ -60,19 +74,21 @@ Procedural SQL engines (**PL/pgSQL** in PostgreSQL, **PL/SQL** in Oracle, **T-SQ
 ## 2. PL/pgSQL Engine Architecture & Execution Mechanics
 
 ### 2.1 The Server Programming Interface (SPI)
+
 PL/pgSQL is not an external interpreter; it runs embedded inside the PostgreSQL backend process using the **Server Programming Interface (SPI)**.
-- When a PL/pgSQL block executes, the engine compiles SQL statements into prepared execution plans (`SPI_prepare`).
-- On subsequent invocations within the same database connection, the engine executes the pre-compiled SPI plan directly, avoiding query parsing and optimization overhead.
+
+* When a PL/pgSQL block executes, the engine compiles SQL statements into prepared execution plans (`SPI_prepare`).
+* On subsequent invocations within the same database connection, the engine executes the pre-compiled SPI plan directly, avoiding query parsing and optimization overhead.
 
 ---
 
 ## 3. Functions vs Stored Procedures & Volatility Classifications
 
-```
+```text
 ┌────────────────────────────────────────────────────────────────────────────────┐
 │                    FUNCTIONS VS STORED PROCEDURES MATRIX                       │
 ├──────────────────────────┬──────────────────────────┬──────────────────────────┤
-│ Dimension                │ Function (`CREATE FUNCTION`)| Procedure (`CREATE PROCEDURE`)|
+| │ Dimension                │ Function (`CREATE FUNCTION`)| Procedure (`CREATE PROCEDURE`)|
 ├──────────────────────────┼──────────────────────────┼──────────────────────────┤
 │ **Invocation**           │ `SELECT func_name()`     │ `CALL proc_name()`       │
 ├──────────────────────────┼──────────────────────────┼──────────────────────────┤
@@ -85,9 +101,10 @@ PL/pgSQL is not an external interpreter; it runs embedded inside the PostgreSQL 
 ```
 
 ### 3.1 Function Volatility Categories (Critical Optimization Levers)
+
 Every SQL function must be declared with its true mathematical volatility category:
 
-```
+```text
 ┌────────────────────────────────────────────────────────────────────────────────┐
 │                   FUNCTION VOLATILITY CLASSIFICATIONS                          │
 ├───────────────────┬──────────────────────────────────┬─────────────────────────┤
@@ -109,11 +126,13 @@ Every SQL function must be declared with its true mathematical volatility catego
 ## 4. Trigger Architecture: Timing, Granularity & Transition Tables
 
 ### 4.1 Trigger Firing Lifecycle
-- **`BEFORE` Triggers**: Execute before tuple validation and disk page writing. Can modify `NEW` record values (e.g. sanitizing input, setting default hashes) or abort the write (`RAISE EXCEPTION` or `RETURN NULL`).
-- **`AFTER` Triggers**: Execute after the tuple is written to the table page and indexes. Ideal for inserting immutable audit entries into historical ledger tables.
-- **`INSTEAD OF` Triggers**: Registered on complex relational Views to intercept and redirect `INSERT`/`UPDATE`/`DELETE` statements to underlying base tables.
+
+* **`BEFORE` Triggers**: Execute before tuple validation and disk page writing. Can modify `NEW` record values (e.g. sanitizing input, setting default hashes) or abort the write (`RAISE EXCEPTION` or `RETURN NULL`).
+* **`AFTER` Triggers**: Execute after the tuple is written to the table page and indexes. Ideal for inserting immutable audit entries into historical ledger tables.
+* **`INSTEAD OF` Triggers**: Registered on complex relational Views to intercept and redirect `INSERT`/`UPDATE`/`DELETE` statements to underlying base tables.
 
 ### 4.2 Statement Triggers with Transition Tables (`REFERENCING`)
+
 Row-level triggers (`FOR EACH ROW`) execute once for every mutated tuple. For a 100,000-row batch update, a row trigger fires **100,000 separate times**, causing massive CPU overhead.
 
 **Statement Triggers with Transition Tables** process all updated rows in a single batch pass:
@@ -131,9 +150,10 @@ EXECUTE FUNCTION log_bulk_inventory_changes();
 ## 5. Certification & Exam Essentials (Cheat Sheet)
 
 * ⚠️ **`SECURITY DEFINER` vs `SECURITY INVOKER`**:
-  - `SECURITY INVOKER` (Default): Function executes with the privileges of the user *calling* the function.
-  - `SECURITY DEFINER`: Function executes with the elevated privileges of the user who *created* the function (similar to Unix `setuid`). **Security Warning**: Always set `SET search_path = public, pg_temp;` on `SECURITY DEFINER` functions to prevent search_path injection hijacking attacks!
+  * `SECURITY INVOKER` (Default): Function executes with the privileges of the user *calling* the function.
+  * `SECURITY DEFINER`: Function executes with the elevated privileges of the user who *created* the function (similar to Unix `setuid`). **Security Warning**: Always set `SET search_path = public, pg_temp;` on `SECURITY DEFINER` functions to prevent search_path injection hijacking attacks!
 * 🔒 **Autonomous Batch Commits in Stored Procedures**: Use stored procedures to process multi-million row table migrations in batches of 5,000 rows, issuing explicit `COMMIT` statements to free memory and prevent transaction log bloat:
+
   ```sql
   CREATE PROCEDURE purge_old_logs() AS $$
   BEGIN
@@ -146,7 +166,7 @@ EXECUTE FUNCTION log_bulk_inventory_changes();
       END LOOP;
   END;
   $$ LANGUAGE plpgsql;
-  ```
+  ```text
 * ⚙️ **The `IMMUTABLE` Index Rule**: In PostgreSQL, only functions explicitly marked `IMMUTABLE` can be used to construct Functional / Expression Indexes (e.g. `CREATE INDEX idx ON users (LOWER(email))`).
 
 ---
@@ -158,14 +178,14 @@ EXECUTE FUNCTION log_bulk_inventory_changes();
 | **Execution Location** | Inside DB Engine Kernel | Inside DB Engine Kernel | External Node/Python/Go | Inside DB Engine Kernel |
 | **Transaction Control** | Inherited from caller | **Explicit `COMMIT`** | Managed via driver | Inherited from caller |
 | **Network Latency** | **Zero RTTs** | **Zero RTTs** | 1+ Network RTT per query | **Zero RTTs** |
-| **Testability / CI** | SQL unit tests (`pgTAP`)| SQL unit tests (`pgTAP`)| Standard unit test frameworks| Requires database testbed |
-| **Best For** | Heavy calculations & views| Multi-step batch ETL jobs| Core business orchestration| Automated audit & invariants |
+| **Testability / CI** | SQL unit tests (`pgTAP`) | SQL unit tests (`pgTAP`) | Standard unit test frameworks | Requires database testbed |
+| **Best For** | Heavy calculations & views | Multi-step batch ETL jobs | Core business orchestration | Automated audit & invariants |
 
 ---
 
 ## 7. Performance & Resource Optimization
 
-```
+```text
 ┌────────────────────────────────────────────────────────────────────────────────┐
 │                     PROCEDURAL SQL OPTIMIZATION PLAYBOOK                       │
 ├────────────────────────────────────────────────────────────────────────────────┤
@@ -182,15 +202,19 @@ EXECUTE FUNCTION log_bulk_inventory_changes();
 ## 8. In-Depth Engineering Perspectives
 
 ### Security Perspective
+
 * **Search Path Injection Defense**: When creating `SECURITY DEFINER` functions running as superuser, malicious users can create tables with matching names in temporary schemas. Always harden functions with `ALTER FUNCTION func_name() SET search_path = pg_catalog, public, pg_temp;`.
 
 ### High Availability Perspective
+
 * **Trigger Impact on Replication**: Triggers configured on Primary nodes generate WAL records describing final modified states. By default, statement triggers do not fire on Standby replicas during recovery, maintaining high replication throughput.
 
 ### Resilience & Fault Tolerance Perspective
+
 * **Deadlock Prevention in Cascading Triggers**: When Trigger A updates Table B, and Trigger B updates Table A, concurrent writes will deadlock. Structure database triggers to execute strictly one-way cascading writes.
 
 ### Cost & Efficiency Perspective
+
 * **Network Egress Elimination**: Executing a complex 10-step calculation inside a stored procedure replaces 10 separate API database queries with a single `CALL calculate_payouts()` invocation, saving compute and cross-zone cloud data transfer costs.
 
 ---
@@ -305,13 +329,13 @@ $$ LANGUAGE plpgsql;
 ```sql
 -- Seed Accounts:
 INSERT INTO user_accounts (user_email, account_balance)
-VALUES 
+VALUES
     ('elena.rostova@enterprise.io', 50000.00),
     ('marcus.vance@enterprise.io', 12000.00);
 
 -- Execute Account Balance Mutation:
-UPDATE user_accounts 
-SET account_balance = account_balance + 2500.00 
+UPDATE user_accounts
+SET account_balance = account_balance + 2500.00
 WHERE user_email = 'elena.rostova@enterprise.io';
 
 -- Verify CDC Audit Record:
@@ -324,19 +348,25 @@ FROM regulatory_audit_log;
 ## 10. Pure CLI / Command Interface
 
 ### 1. Inspect Stored Functions and Procedure Definitions
+
 Display registered functions and volatility settings:
+
 ```bash
 psql -U postgres -d enterprise_db -c "SELECT proname, prosrc, provolatile, prosecdef FROM pg_proc JOIN pg_namespace n ON pg_proc.pronamespace = n.oid WHERE n.nspname = 'public';"
 ```
 
 ### 2. Inspect Active Table Triggers in PostgreSQL
+
 Query all active trigger bindings on relations:
+
 ```bash
 psql -U postgres -d enterprise_db -c "SELECT relname AS table_name, tgname AS trigger_name, tgtype, proname AS function_name FROM pg_trigger t JOIN pg_class c ON t.tgrelid = c.oid JOIN pg_proc p ON t.tgfoid = p.oid WHERE NOT tgisinternal;"
 ```
 
 ### 3. Execute Stored Procedure from CLI
+
 Trigger the batch accrual process directly:
+
 ```bash
 psql -U postgres -d enterprise_db -c "CALL process_daily_accrual_batch(0.0005);"
 ```
@@ -345,7 +375,7 @@ psql -U postgres -d enterprise_db -c "CALL process_daily_accrual_batch(0.0005);"
 
 ## 11. Advanced Architecture & Edge-Case Failure Modes
 
-```
+```text
 ┌────────────────────────────────────────────────────────────────────────────────┐
 │                    PROCEDURAL SQL FAILURE RECOVERY MATRIX                      │
 ├──────────────────────┬────────────────────────┬────────────────────────────────┤
@@ -370,29 +400,37 @@ psql -U postgres -d enterprise_db -c "CALL process_daily_accrual_batch(0.0005);"
 ## 12. Detailed Sub-Components & Subsystems
 
 ### 1. Server Programming Interface (SPI) Manager
+
 * **Key Concepts**: Internal C library facilitating direct transactional query execution and cursor management from within procedural language runtimes.
 * **CLI / Tool Snippet**:
+
 ```bash
 psql -U postgres -d enterprise_db -c "SHOW plpgsql.extra_warnings;"
 ```
 
 ### 2. Trigger Event Dispatcher
+
 * **Key Concepts**: Intercepts relational heap access operations (`heap_insert`, `heap_update`), firing registered `BEFORE` and `AFTER` trigger queues.
 * **CLI / Tool Snippet**:
+
 ```bash
 psql -U postgres -d enterprise_db -c "SELECT count(*) FROM pg_trigger WHERE NOT tgisinternal;"
 ```
 
 ### 3. PL/pgSQL Function Bytecode Cache
+
 * **Key Concepts**: In-memory AST and execution plan cache maintaining compiled SPI queries per backend process.
 * **CLI / Tool Snippet**:
+
 ```bash
 psql -U postgres -d enterprise_db -c "DISCARD PLANS;"
 ```
 
 ### 4. Transition Table Buffer Subsystem
+
 * **Key Concepts**: Ephemeral tuple store capturing modified row sets for Statement-level triggers (`REFERENCING NEW TABLE`).
 * **CLI / Tool Snippet**:
+
 ```bash
 psql -U postgres -d enterprise_db -c "SELECT * FROM pg_stat_user_functions;"
 ```
@@ -402,6 +440,7 @@ psql -U postgres -d enterprise_db -c "SELECT * FROM pg_stat_user_functions;"
 ## 13. References (The 5+5 Rule)
 
 ### Official Documentation & Academic Specifications
+
 1. [PostgreSQL Official Documentation: Chapter 43. PL/pgSQL - SQL Procedural Language](https://www.postgresql.org/docs/current/plpgsql.html)
 2. [PostgreSQL Official Documentation: Chapter 39. Triggers](https://www.postgresql.org/docs/current/triggers.html)
 3. [PostgreSQL Official Documentation: Chapter 47. Server Programming Interface (SPI)](https://www.postgresql.org/docs/current/spi.html)
@@ -409,17 +448,18 @@ psql -U postgres -d enterprise_db -c "SELECT * FROM pg_stat_user_functions;"
 5. [Oracle Database 23c: PL/SQL Language Reference Manual](https://docs.oracle.com/en/database/oracle/oracle-database/23/lnpls/)
 
 ### Authoritative Engineering Blogs & Architecture Deep Dives
-6. [Brandur Leach: Writing Maintainable PostgreSQL Triggers and Audit Logs](https://brandur.org/postgres-triggers)
-7. [Use The Index, Luke: Function Performance and Deterministic Volatility](https://use-the-index-luke.com/)
-8. [Modern SQL: Stored Procedures vs Functions in Modern Relational Systems](https://modern-sql.com/)
-9. [Craig Kerstiens: PostgreSQL Stored Procedures vs Functions: What to Use When](https://www.craigkerstiens.com/)
-10. [High-Performance PostgreSQL: Transition Tables and Bulk Trigger Optimization](https://www.cybertec-postgresql.com/en/transition-tables-in-postgresql-triggers/)
+
+1. [Brandur Leach: Writing Maintainable PostgreSQL Triggers and Audit Logs](https://brandur.org/postgres-triggers)
+2. [Use The Index, Luke: Function Performance and Deterministic Volatility](https://use-the-index-luke.com/)
+3. [Modern SQL: Stored Procedures vs Functions in Modern Relational Systems](https://modern-sql.com/)
+4. [Craig Kerstiens: PostgreSQL Stored Procedures vs Functions: What to Use When](https://www.craigkerstiens.com/)
+5. [High-Performance PostgreSQL: Transition Tables and Bulk Trigger Optimization](https://www.cybertec-postgresql.com/en/transition-tables-in-postgresql-triggers/)
 
 ---
 
 ## 14. Universal FinOps & Resource Cost Governance
 
-```
+```text
 ┌────────────────────────────────────────────────────────────────────────────────┐
 │                    PROCEDURAL FINOPS SAVINGS MATRIX                            │
 ├──────────────────────────┬──────────────────────────┬──────────────────────────┤
@@ -440,14 +480,18 @@ psql -U postgres -d enterprise_db -c "SELECT * FROM pg_stat_user_functions;"
 ```
 
 ### 1. Batch Stored Procedure vs Monolithic Transaction Storage Costs
+
 When migrating or purging 10 million historical records in a single `DELETE FROM logs WHERE created_at < ...` statement:
-- The single transaction holds row locks on all 10 million rows and generates **~18GB of uncommitted WAL records**.
-- This forces the database to allocate temporary disk buffer space and delays replication to read replicas.
-- Implementing a **Stored Procedure with intermediate `COMMIT`s** (`CALL purge_old_logs()`) purges the data in batches of 5,000 rows.
-- Each batch immediately commits and releases its locks, keeping the WAL memory footprint under **25MB** and preventing storage auto-scaling charges.
+
+* The single transaction holds row locks on all 10 million rows and generates **~18GB of uncommitted WAL records**.
+* This forces the database to allocate temporary disk buffer space and delays replication to read replicas.
+* Implementing a **Stored Procedure with intermediate `COMMIT`s** (`CALL purge_old_logs()`) purges the data in batches of 5,000 rows.
+* Each batch immediately commits and releases its locks, keeping the WAL memory footprint under **25MB** and preventing storage auto-scaling charges.
 
 ### 2. Server-Side Data Transformation Network Egress Savings
+
 When calculating daily billing invoices across 250,000 customers:
-- Fetching raw usage data to application servers transfers **~1.2 GB of data** over cross-AZ networks, taking 45 seconds of combined network and application processing time.
-- Encapsulating the logic in a **PL/pgSQL Stored Procedure** executes the entire billing run in **1.8 seconds** directly inside the database, generating zero external network egress.
-- **FinOps ROI**: Eliminates cross-AZ network transfer charges (\$0.01/GB) and reduces the CPU capacity required for backend worker microservices.
+
+* Fetching raw usage data to application servers transfers **~1.2 GB of data** over cross-AZ networks, taking 45 seconds of combined network and application processing time.
+* Encapsulating the logic in a **PL/pgSQL Stored Procedure** executes the entire billing run in **1.8 seconds** directly inside the database, generating zero external network egress.
+* **FinOps ROI**: Eliminates cross-AZ network transfer charges (\$0.01/GB) and reduces the CPU capacity required for backend worker microservices.

@@ -1,28 +1,41 @@
 # Module 13: Database Security — RBAC, Row-Level Security (RLS) & Cryptographic Hardening
 
-**Track:** SQL Relational Engineering & Distributed Database Architecture  
-**Category:** Enterprise Security, Multi-Tenant Isolation, Cryptography & Compliance Governance  
-**Standard Identifier:** `DOC-STD-UNIVERSAL-2026`  
+**Track:** SQL Relational Engineering & Distributed Database Architecture
+**Category:** Enterprise Security, Multi-Tenant Isolation, Cryptography & Compliance Governance
+**Standard Identifier:** `DOC-STD-UNIVERSAL-2026`
 **Status:** ✅ Completed
 
 ---
 
 ## 📑 Table of Contents
+
 1. [High-Level Overview & Executive Summary](#1-high-level-overview--executive-summary)
+
 2. [The Defense-in-Depth Database Security Model](#2-the-defense-in-depth-database-security-model)
+
 3. [Row-Level Security (RLS) & Multi-Tenant Isolation](#3-row-level-security-rls--multi-tenant-isolation)
+
 4. [Role-Based Access Control (RBAC) & Principle of Least Privilege](#4-role-based-access-control-rbac--principle-of-least-privilege)
+
 5. [Certification & Exam Essentials (Cheat Sheet)](#5-certification--exam-essentials-cheat-sheet)
+
 6. [Comparative Analysis Matrix: Security Enforcement Models](#6-comparative-analysis-matrix-security-enforcement-models)
+
 7. [Performance & Resource Optimization](#7-performance--resource-optimization)
+
 8. [In-Depth Engineering Perspectives](#8-in-depth-engineering-perspectives)
-9. [Well-Architected Framework Alignment](#9-well-architected-framework-alignment)
-10. [Step-by-Step Hands-On Production Walkthrough](#10-step-by-step-hands-on-production-walkthrough)
-11. [Pure CLI / Command Interface](#11-pure-cli--command-interface)
-12. [Advanced Architecture & Edge-Case Failure Modes](#12-advanced-architecture--edge-case-failure-modes)
-13. [Detailed Sub-Components & Subsystems](#13-detailed-sub-components--subsystems)
-14. [References (The 5+5 Rule)](#14-references-the-55-rule)
-15. [Universal FinOps & Resource Cost Governance](#15-universal-finops--resource-cost-governance)
+
+9. [Step-by-Step Hands-On Production Walkthrough](#9-step-by-step-hands-on-production-walkthrough)
+
+10. [Pure CLI / Command Interface](#10-pure-cli--command-interface)
+
+11. [Advanced Architecture & Edge-Case Failure Modes](#11-advanced-architecture--edge-case-failure-modes)
+
+12. [Detailed Sub-Components & Subsystems](#12-detailed-sub-components--subsystems)
+
+13. [References (The 5+5 Rule)](#13-references-the-55-rule)
+
+14. [Universal FinOps & Resource Cost Governance](#14-universal-finops--resource-cost-governance)
 
 ---
 
@@ -30,7 +43,7 @@
 
 Enterprise relational database security implements a multi-layered **Defense-in-Depth Architecture** across network isolation, mutual TLS authentication, Role-Based Access Control (**RBAC**), Column-Level Encryption (**`pgcrypto`** / TDE), and **Row-Level Security (RLS)**. In modern multi-tenant SaaS platforms, RLS establishes an un-bypassable security boundary inside the database engine kernel, guaranteeing that tenant data remains completely isolated even if application-layer code suffers from SQL injection vulnerabilities.
 
-```
+```text
 ┌────────────────────────────────────────────────────────────────────────────────┐
 │               DEFENSE-IN-DEPTH DATABASE SECURITY MODEL                         │
 ├────────────────────────────────────────────────────────────────────────────────┤
@@ -54,6 +67,7 @@ Enterprise relational database security implements a multi-layered **Defense-in-
 ```
 
 ### 👔 Executive Summary (For Managers & Non-Technical Stakeholders)
+
 * **Business Purpose**: Enterprise databases store sensitive customer data, payment credentials, and corporate trade secrets. A single data breach or compliance violation can cost millions in regulatory fines (GDPR, HIPAA, PCI-DSS, SOC 2).
 * **How It Works**: By enabling Row-Level Security (RLS) directly in the database engine, the database automatically filters out all data belonging to other companies. Even if an engineer writes a buggy query without a `WHERE` clause, the database kernel strictly enforces customer privacy.
 * **Key Business Value & ROI**: Eliminates the risk of catastrophic multi-tenant data leaks, prevents SQL Injection attacks, and satisfies stringent compliance audit requirements with zero third-party software licensing costs.
@@ -62,7 +76,7 @@ Enterprise relational database security implements a multi-layered **Defense-in-
 
 ## 2. The Defense-in-Depth Database Security Model
 
-```
+```text
 ┌────────────────────────────────────────────────────────────────────────────────┐
 │                    DATABASE SECURITY CONTROLS MATRIX                           │
 ├───────────────────┬──────────────────────────────────┬─────────────────────────┤
@@ -90,6 +104,7 @@ Enterprise relational database security implements a multi-layered **Defense-in-
 ## 3. Row-Level Security (RLS) & Multi-Tenant Isolation
 
 ### 3.1 The RLS Query Rewrite Engine
+
 When Row-Level Security is enabled on a table, the PostgreSQL Query Rewriter transparently injects security filter expressions into the Abstract Syntax Tree (AST):
 
 ```sql
@@ -97,13 +112,14 @@ When Row-Level Security is enabled on a table, the PostgreSQL Query Rewriter tra
 SELECT * FROM financial_records;
 
 -- Database Engine Kernel Rewrites and Executes:
-SELECT * FROM financial_records 
+SELECT * FROM financial_records
 WHERE tenant_id = CURRENT_SETTING('app.current_tenant_id', true)::BIGINT;
 ```
 
-### 3.2 `USING` vs `WITH CHECK` Clauses:
-- **`USING`**: Filters existing rows for `SELECT`, `UPDATE`, and `DELETE` operations (Determines what rows the user can *see*).
-- **`WITH CHECK`**: Validates new rows being inserted or updated via `INSERT` and `UPDATE` (Determines what rows the user can *write*).
+### 3.2 `USING` vs `WITH CHECK` Clauses
+
+* **`USING`**: Filters existing rows for `SELECT`, `UPDATE`, and `DELETE` operations (Determines what rows the user can *see*).
+* **`WITH CHECK`**: Validates new rows being inserted or updated via `INSERT` and `UPDATE` (Determines what rows the user can *write*).
 
 ```sql
 CREATE POLICY tenant_isolation_policy ON tenant_documents
@@ -116,7 +132,8 @@ CREATE POLICY tenant_isolation_policy ON tenant_documents
 
 ## 4. Role-Based Access Control (RBAC) & Principle of Least Privilege
 
-### Hardening the Default Public Schema:
+### Hardening the Default Public Schema
+
 By default in PostgreSQL, all database users can create tables in the `public` schema. In production environments, this must be locked down immediately:
 
 ```sql
@@ -143,10 +160,12 @@ ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT, INSERT, UPDATE, DELETE O
 ## 5. Certification & Exam Essentials (Cheat Sheet)
 
 * ⚠️ **The `FORCE ROW LEVEL SECURITY` Requirement**: By default, table owners and database superusers bypass all RLS policies. To force the database engine to enforce RLS policies even when connected as the table owner:
+
   ```sql
   ALTER TABLE tenant_documents FORCE ROW LEVEL SECURITY;
-  ```
+  ```text
 * 🔒 **SQL Injection Elimination via Prepared Statements**: Never concatenate dynamic strings into SQL statements (`query = "SELECT * FROM users WHERE email = '" + input + "'"`). Always use prepared statements with binary parameter placeholders (`$1`, `$2`), which treat all user inputs strictly as literal data constants.
+
 * ⚙️ **`SCRAM-SHA-256` Password Hashing**: In PostgreSQL `pg_hba.conf`, always enforce `scram-sha-256` instead of deprecated `md5` (which is vulnerable to collision attacks and rainbow tables).
 * ⚠️ **RLS Performance & Function Leakage**: RLS policy expressions containing slow subqueries execute per candidate tuple. Ensure all columns referenced in RLS policies (e.g. `tenant_id`) are indexed with B-Tree indexes!
 
@@ -156,16 +175,16 @@ ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT, INSERT, UPDATE, DELETE O
 
 | Security Model | Enforcement Layer | Vulnerability to SQL Injection | Multi-Tenant Safety | Operational Complexity |
 | :--- | :--- | :--- | :--- | :--- |
-| **Application-Layer WHERE**| Microservice Code | **High (1 missed filter leaks data)**| Low | High maintenance |
+| **Application-Layer WHERE** | Microservice Code | **High (1 missed filter leaks data)** | Low | High maintenance |
 | **Database Views** | Relational View Logic | Moderate | Moderate | Moderate |
-| **Row-Level Security (RLS)**| **Database Kernel Engine**| **Zero (Engine enforces policy)** | **Extreme** | Minimal |
-| **Separate DB per Tenant** | Physical Database Instances| Zero | Extreme | **Extremely Expensive** |
+| **Row-Level Security (RLS)** | **Database Kernel Engine** | **Zero (Engine enforces policy)** | **Extreme** | Minimal |
+| **Separate DB per Tenant** | Physical Database Instances | Zero | Extreme | **Extremely Expensive** |
 
 ---
 
 ## 7. Performance & Resource Optimization
 
-```
+```text
 ┌────────────────────────────────────────────────────────────────────────────────┐
 │                        SECURITY PERFORMANCE PLAYBOOK                           │
 ├────────────────────────────────────────────────────────────────────────────────┤
@@ -181,18 +200,23 @@ ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT, INSERT, UPDATE, DELETE O
 ## 8. In-Depth Engineering Perspectives
 
 ### Security Perspective
+
 * **Column-Level Field Encryption (`pgcrypto`)**: For high-risk fields (SSNs, API secret keys), encrypt data in transit to storage using AES-256:
+
   ```sql
   INSERT INTO users (encrypted_ssn) VALUES (pgp_sym_encrypt('123-45-6789', 'master_secret_key'));
-  ```
+  ```text
 
 ### High Availability Perspective
+
 * **Role Replication Across Clusters**: Database roles and global permissions reside in the global `pg_authid` catalog, replicating automatically across physical streaming replicas.
 
 ### Resilience & Fault Tolerance Perspective
+
 * **Connection Context Cleanup**: When using connection pooling (PgBouncer in transaction mode), always execute `SET LOCAL app.current_tenant_id = '123';` so that tenant context is automatically cleared when the transaction ends, preventing cross-request tenant leakage.
 
 ### Cost & Efficiency Perspective
+
 * **Single Database Multi-Tenancy (Massive FinOps Savings)**: Using RLS allows hosting 10,000 SaaS customers inside a single shared database instance with military-grade isolation, eliminating the prohibitive cost of provisioning 10,000 separate database instances.
 
 ---
@@ -252,8 +276,8 @@ SET LOCAL app.current_tenant_id = '100';
 
 INSERT INTO enterprise_vault_documents (tenant_id, document_title, encrypted_payload)
 VALUES (
-    100, 
-    'Q3 Strategic Acquisition Plan', 
+    100,
+    'Q3 Strategic Acquisition Plan',
     pgp_sym_encrypt('Acquiring Competitor X for $50M', 'vault_passphrase_2026')
 );
 COMMIT;
@@ -263,7 +287,7 @@ BEGIN;
 SET LOCAL app.current_tenant_id = '200';
 
 -- ⚡ RLS Automatically Returns ZERO Rows (Complete Isolation!):
-SELECT doc_id, document_title, pgp_sym_decrypt(encrypted_payload, 'vault_passphrase_2026') 
+SELECT doc_id, document_title, pgp_sym_decrypt(encrypted_payload, 'vault_passphrase_2026')
 FROM enterprise_vault_documents;
 COMMIT;
 
@@ -271,9 +295,9 @@ COMMIT;
 BEGIN;
 SET LOCAL app.current_tenant_id = '100';
 
-SELECT 
-    doc_id, 
-    document_title, 
+SELECT
+    doc_id,
+    document_title,
     pgp_sym_decrypt(encrypted_payload, 'vault_passphrase_2026') AS decrypted_plan
 FROM enterprise_vault_documents;
 COMMIT;
@@ -284,19 +308,25 @@ COMMIT;
 ## 10. Pure CLI / Command Interface
 
 ### 1. Inspect Active RLS Policies Across Database Catalogs
+
 Query registered row security policies and qualifying expressions:
+
 ```bash
 psql -U postgres -d enterprise_db -c "SELECT schemaname, tablename, policyname, permissive, roles, cmd, qual, with_check FROM pg_policies;"
 ```
 
 ### 2. Audit Table Row-Level Security Status
+
 Verify that RLS and FORCE RLS are active:
+
 ```bash
 psql -U postgres -d enterprise_db -c "SELECT relname, rowsecurity, forcerowsecurity FROM pg_class WHERE relname = 'enterprise_vault_documents';"
 ```
 
 ### 3. Verify SCRAM Password Authentication Configuration in pg_hba.conf
+
 Check active host authentication configuration:
+
 ```bash
 psql -U postgres -d enterprise_db -c "SELECT type, database, user_name, auth_method FROM pg_hba_file_rules;"
 ```
@@ -305,7 +335,7 @@ psql -U postgres -d enterprise_db -c "SELECT type, database, user_name, auth_met
 
 ## 11. Advanced Architecture & Edge-Case Failure Modes
 
-```
+```text
 ┌────────────────────────────────────────────────────────────────────────────────┐
 │                    SECURITY FAILURE RECOVERY MATRIX                            │
 ├──────────────────────┬────────────────────────┬────────────────────────────────┤
@@ -330,29 +360,37 @@ psql -U postgres -d enterprise_db -c "SELECT type, database, user_name, auth_met
 ## 12. Detailed Sub-Components & Subsystems
 
 ### 1. Row-Level Security (RLS) Policy Engine
+
 * **Key Concepts**: Rewrites query parse trees during planning, prepending boolean policy qualifications (`qual`) to relation scan nodes.
 * **CLI / Tool Snippet**:
+
 ```bash
 psql -U postgres -d enterprise_db -c "EXPLAIN (VERBOSE) SELECT * FROM enterprise_vault_documents;"
 ```
 
 ### 2. SCRAM-SHA-256 Authentication Module
+
 * **Key Concepts**: Cryptographic challenge-response authentication protocol preventing password hashes from being sniffed over networks.
 * **CLI / Tool Snippet**:
+
 ```bash
 psql -U postgres -d enterprise_db -c "SHOW password_encryption;"
 ```
 
 ### 3. `pgaudit` Compliance Extension
+
 * **Key Concepts**: Intercepts executor statements, emitting structured JSON audit logs for DDL, Role, and Data mutations to syslog/CloudWatch.
 * **CLI / Tool Snippet**:
+
 ```bash
 psql -U postgres -d enterprise_db -c "SHOW pgaudit.log;"
 ```
 
 ### 4. `pgcrypto` Cryptographic Engine
+
 * **Key Concepts**: OpenSSL-backed cryptographic library providing AES-256, HMAC-SHA256, and OpenPGP encryption directly in SQL statements.
 * **CLI / Tool Snippet**:
+
 ```bash
 psql -U postgres -d enterprise_db -c "SELECT digest('password123', 'sha256');"
 ```
@@ -362,6 +400,7 @@ psql -U postgres -d enterprise_db -c "SELECT digest('password123', 'sha256');"
 ## 13. References (The 5+5 Rule)
 
 ### Official Documentation & Security Standards
+
 1. [PostgreSQL Official Documentation: Chapter 5.8. Row Security Policies (RLS)](https://www.postgresql.org/docs/current/ddl-rowsecurity.html)
 2. [PostgreSQL Official Documentation: Chapter 22. Database Roles and Privileges](https://www.postgresql.org/docs/current/user-manag.html)
 3. [PostgreSQL Official Documentation: pgcrypto Cryptographic Module](https://www.postgresql.org/docs/current/pgcrypto.html)
@@ -369,17 +408,18 @@ psql -U postgres -d enterprise_db -c "SELECT digest('password123', 'sha256');"
 5. [OWASP Top 10: SQL Injection Prevention Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/SQL_Injection_Prevention_Cheat_Sheet.html)
 
 ### Authoritative Engineering Blogs & Architecture Deep Dives
-6. [Brandur Leach: Multi-Tenant Data Isolation with PostgreSQL Row-Level Security](https://brandur.org/postgres-rls)
-7. [Use The Index, Luke: Security and Performance in Multi-Tenant Relational Databases](https://use-the-index-luke.com/)
-8. [Craig Kerstiens: Implementing Row-Level Security in PostgreSQL](https://www.craigkerstiens.com/)
-9. [High-Performance PostgreSQL: Hardening PostgreSQL Security Defenses](https://www.cybertec-postgresql.com/en/postgresql-row-level-security-security-and-performance/)
-10. [Database Trends & Applications: Enterprise Database Governance & Encryption](https://www.dbta.com/)
+
+1. [Brandur Leach: Multi-Tenant Data Isolation with PostgreSQL Row-Level Security](https://brandur.org/postgres-rls)
+2. [Use The Index, Luke: Security and Performance in Multi-Tenant Relational Databases](https://use-the-index-luke.com/)
+3. [Craig Kerstiens: Implementing Row-Level Security in PostgreSQL](https://www.craigkerstiens.com/)
+4. [High-Performance PostgreSQL: Hardening PostgreSQL Security Defenses](https://www.cybertec-postgresql.com/en/postgresql-row-level-security-security-and-performance/)
+5. [Database Trends & Applications: Enterprise Database Governance & Encryption](https://www.dbta.com/)
 
 ---
 
 ## 14. Universal FinOps & Resource Cost Governance
 
-```
+```text
 ┌────────────────────────────────────────────────────────────────────────────────┐
 │                      SECURITY FINOPS SAVINGS MATRIX                            │
 ├──────────────────────────┬──────────────────────────┬──────────────────────────┤
@@ -400,12 +440,16 @@ psql -U postgres -d enterprise_db -c "SELECT digest('password123', 'sha256');"
 ```
 
 ### 1. RLS Multi-Tenancy vs Dedicated Database Fleet Sizing
+
 When building a SaaS platform serving 2,000 corporate clients:
-- **Dedicated Database Architecture**: Provisioning 2,000 separate minimal cloud database instances (e.g. AWS RDS `db.t4g.micro` @ \$15/month each) costs **\$30,000 per month (\$360,000/year)** with massive operational maintenance overhead.
-- **RLS Multi-Tenant Architecture**: Hosting all 2,000 tenants in a single shared, highly-available PostgreSQL cluster (`db.r6g.2xlarge` Multi-AZ @ **\$1,200/month**) enforced by Row-Level Security delivers the exact same data isolation guarantees.
-- **FinOps Savings**: **\$28,800/month (\$345,600/year in direct cloud infrastructure savings)**.
+
+* **Dedicated Database Architecture**: Provisioning 2,000 separate minimal cloud database instances (e.g. AWS RDS `db.t4g.micro` @ \$15/month each) costs **\$30,000 per month (\$360,000/year)** with massive operational maintenance overhead.
+* **RLS Multi-Tenant Architecture**: Hosting all 2,000 tenants in a single shared, highly-available PostgreSQL cluster (`db.r6g.2xlarge` Multi-AZ @ **\$1,200/month**) enforced by Row-Level Security delivers the exact same data isolation guarantees.
+* **FinOps Savings**: **\$28,800/month (\$345,600/year in direct cloud infrastructure savings)**.
 
 ### 2. In-Database Encryption vs Cloud KMS API Fee Optimization
+
 When an application encrypts and decrypts 50 million sensitive database fields monthly using external cloud KMS APIs (e.g. AWS KMS @ \$0.03 per 10,000 requests):
-- Cloud KMS API requests generate **\$1,500/month in billable KMS API fees**, plus 15ms of added network latency per transaction.
-- Encrypting data directly in PostgreSQL using `pgcrypto` (`pgp_sym_encrypt`) with an in-memory secret key performs encryption in **0.02 milliseconds** with **\$0 in cloud KMS API request fees**.
+
+* Cloud KMS API requests generate **\$1,500/month in billable KMS API fees**, plus 15ms of added network latency per transaction.
+* Encrypting data directly in PostgreSQL using `pgcrypto` (`pgp_sym_encrypt`) with an in-memory secret key performs encryption in **0.02 milliseconds** with **\$0 in cloud KMS API request fees**.

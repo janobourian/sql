@@ -45,7 +45,7 @@ The comprehensive modular guides are available in the [`docs/`](docs/) directory
 | 9 | Henry Clark | Monitor, Mouse |
 | 10 | Irene Scott | Keyboard, Laptop |
 
-#### 1NF 
+#### 1NF
 
 * Eliminate Repeating Groups
 * Ensures that each column contains only atomic values
@@ -196,10 +196,12 @@ The comprehensive modular guides are available in the [`docs/`](docs/) directory
 | 1016 | 10 | 501 |
 
 #### 4NF
+
 * Meet all the requirements of 3NF
 * No multi-valued dependencies
 
 #### 5NF
+
 * Meet all the requirements of 4NF
 * Addresses join dependencies
 
@@ -208,6 +210,7 @@ The comprehensive modular guides are available in the [`docs/`](docs/) directory
 ### Crash Course Information
 
 * Three different ways to write the same query:
+
 ```sql
 SELECT * FROM birthdays LIMIT 10;
 SELECT TOP 10 * FROM birthdays;
@@ -215,6 +218,7 @@ SELECT * FROM birthdays WHERE ROWNUM <= 10;
 ```
 
 * Another example:
+
 ```sql
 SELECT *
 FROM my_table
@@ -223,6 +227,7 @@ ORDER BY column2;
 ```
 
 * The general order:
+
 ```sql
 SELECT    -- columns to display
 FROM      -- table(s) to pull from
@@ -246,6 +251,7 @@ quit
 ```
 
 * First commands:
+
 ```sql
 CREATE TABLE test (id int, num int);
 INSERT INTO test VALUES (1, 100), (2, 200);
@@ -253,6 +259,7 @@ SELECT * FROM test LIMIT 1;
 ```
 
 * A semi-complex query using keywords, functions, identifiers, and aliases:
+
 ```sql
 SELECT e.name, COUNT(s.sale_id) AS num_sales
 FROM employee e
@@ -287,6 +294,7 @@ GROUP BY e.name;
 * **Automatic Creation**: `u_id INTEGER PRIMARY KEY AUTO_INCREMENT`
 
 * Insert the results from a query into a new table:
+
 ```sql
 INSERT INTO new_table_two_columns (id, name)
 SELECT id, name FROM old_table WHERE id < 100;
@@ -305,6 +313,7 @@ order_status_name, description
 ```
 
 * If MySQL gives you an error saying loading data is disabled:
+
 ```sql
 SET GLOBAL local_infile = 1;
 quit

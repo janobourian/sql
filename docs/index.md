@@ -1,4 +1,5 @@
 # Relational Database Architecture & Enterprise SQL — Master Curriculum Index
+
 **Repository:** `vit/sql`
 **Domain:** Relational Database Engineering, ACID Internals, Query Optimization & High Availability
 **Target Certifications:** PostgreSQL Certified Professional, Oracle Database SQL Certified, AWS Database Specialty
@@ -32,6 +33,7 @@
 ## 📌 Original SQL Scripts & Historical Labs (Preserved)
 
 All original project SQL scripts in this repository remain 100% functional and intact:
+
 * [`01_sql_code.sql`](file:///Users/frgonzal/Documents/vit/sql/01_sql_code.sql): Core SQL operations and data insertion exercises.
 * [`03_sql_language.sql`](file:///Users/frgonzal/Documents/vit/sql/03_sql_language.sql): SQL language syntax, types, and schema setup.
 * [`04_query_basics.sql`](file:///Users/frgonzal/Documents/vit/sql/04_query_basics.sql): Query basics, aliases, and filtering.
@@ -40,9 +42,10 @@ All original project SQL scripts in this repository remain 100% functional and i
 ---
 
 ## 🛠️ Documentation Standards Applied Across All Guides
+
 1. **👔 Executive Summary**: Non-technical explanation of business purpose, mechanics, and value for managers and teammates.
 2. **Technical Deep Dives**: Comprehensive architecture explanations, execution plan operators, and B-Tree algorithms.
 3. **Hands-On Step-by-Step Walkthroughs**: Reproducible labs for designing, indexing, optimizing, and securing databases.
-4. **Clean, Escaped CLI Snippets**: Formatted with trailing ` \` line escapes, 4-space indentation, and zero in-code comments.
+4. **Clean, Escaped CLI Snippets**: Formatted with trailing `\` line escapes, 4-space indentation, and zero in-code comments.
 5. **Trustworthy Curated Sources**: Exactly 5 official documentation links + 5 authoritative engineering blogs per module.
 6. **FinOps & Resource Governance**: 500+ word guidelines on buffer pool right-sizing, connection pooling, and storage pruning.
